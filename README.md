@@ -8,7 +8,7 @@ A free, local radio programming tool for Meshtastic and MeshCore. It opens a sim
 
 ## Quick start
 
-    git clone https://github.com/YOUR-NAME/elisha
+    git clone https://github.com/JonnyNeutron/elisha
     cd elisha
     pip install -r requirements.txt
     python3 elisha.py
@@ -38,7 +38,7 @@ Also download the firmware files you might need (from the Meshtastic and MeshCor
 
     python3 elisha.py
 
-It prints a link with a one time token and opens your browser. Pick Meshtastic, MeshCore, or MC Repeater at the top, pick the serial port, and go.
+It prints a link with a token in it and opens your browser. The token is saved in your data folder, so the same link keeps working after a restart and you can bookmark it. If you ever see a token error, copy the full link from the terminal. Pick Meshtastic, MeshCore, or MC Repeater at the top, pick the serial port, and go.
 ## What it does
 
 Meshtastic: read config and node list, set names, region, modem preset, role, TX power, fixed position, edit channels and keys, add or delete channels, join from a channel URL, share URL and QR, back up and restore full config (YAML), reboot, clear node list, factory reset, any `--set` field.

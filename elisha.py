@@ -41,7 +41,7 @@ DIRS = {"backups": HOME / "backups", "firmware": HOME / "firmware"}
 AUDIT = HOME / "audit.log"
 DRY = os.environ.get("ELISHA_DRYRUN") == "1"
 LOCK = threading.Lock()
-TOKEN = secrets.token_urlsafe(24)
+TOKEN = ""  # set in main() from a saved file so links keep working across restarts
 MAX_UPLOAD = 64 * 1024 * 1024
 UPLOAD_EXT = {"firmware": {".bin", ".uf2", ".zip", ".hex"}, "backups": {".yaml", ".yml", ".cfg", ".txt", ".mcs", ".json"}}
 
@@ -54,6 +54,24 @@ class Bad(Exception):
 def ensure_dirs():
     for d in DIRS.values():
         d.mkdir(parents=True, exist_ok=True)
+
+
+def load_token():
+    """Reuse one token across runs so bookmarks and open tabs keep working."""
+    f = HOME / "token"
+    try:
+        t = f.read_text().strip()
+        if len(t) >= 20:
+            return t
+    except OSError:
+        pass
+    t = secrets.token_urlsafe(24)
+    try:
+        f.write_text(t)
+        os.chmod(f, 0o600)
+    except OSError:
+        pass
+    return t
 
 
 def now_stamp():
@@ -765,8 +783,8 @@ class Handler(BaseHTTPRequestHandler):
             self._json({"ok": False, "error": "Bad host header"}, 403)
             return False
         tok = self.headers.get("X-Token") or (q.get("t") or [""])[0]
-        if not secrets.compare_digest(tok, TOKEN):
-            self._json({"ok": False, "error": "Bad or missing token. Open the URL printed in the terminal."}, 403)
+        if not TOKEN or not secrets.compare_digest(tok.encode("utf-8"), TOKEN.encode("utf-8")):
+            self._json({"ok": False, "error": "Missing or wrong token. Open the full link printed in the terminal."}, 403)
             return False
         return True
 
@@ -858,6 +876,8 @@ def main():
     ap.add_argument("--no-browser", action="store_true", help="do not open a browser window")
     args = ap.parse_args()
     ensure_dirs()
+    global TOKEN
+    TOKEN = load_token()
     srv = None
     for port in range(args.port, args.port + 20):
         try:
@@ -1031,7 +1051,8 @@ a{color:#9ecbff}
 <div id="out"><div id="outbar"><strong>Output</strong><label style="margin:0"><input type="checkbox" id="mask" checked style="width:auto"> hide keys</label><button id="copy">Copy</button><button id="clear">Clear</button></div><div id="log"></div></div>
 </main>
 <script>
-const T=new URLSearchParams(location.search).get('t')||'';
+let T=new URLSearchParams(location.search).get('t')||'';
+try{if(T)localStorage.setItem('elisha_t',T);else T=localStorage.getItem('elisha_t')||''}catch(e){}
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 let TYPE='mt',LOG=[];
 const esc=t=>String(t).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
@@ -1071,7 +1092,7 @@ async function loadPorts(){const j=await api('/api/ports');const s=$('#port');s.
  (j.ports||[]).forEach(p=>{const o=document.createElement('option');o.value=p.device;o.textContent=p.device+(p.desc&&p.desc!=='n/a'?'  '+p.desc:'')+(p.hint?'  ['+p.hint+']':'');s.appendChild(o)});
  if(!(j.ports||[]).length){const o=document.createElement('option');o.value='';o.textContent='no serial devices found (plug in, then Refresh)';s.appendChild(o)}}
 $('#refresh').onclick=loadPorts;
-async function loadStatus(){const j=await api('/api/status');if(!j.app){$('#deps').innerHTML='<span class="pill r">Bad token. Open the link from the terminal.</span>';return}
+async function loadStatus(){const j=await api('/api/status');if(!j.app){$('#deps').innerHTML='<span class="pill r">Token rejected. Open the full link printed in the terminal, the one ending in ?t=...</span>';return}
  const p=(n,v)=>'<span class="pill '+(v?'g':'r')+'">'+n+' '+(v||'missing')+'</span>';
  $('#deps').innerHTML=p('meshtastic',j.meshtastic)+p('meshcore-cli',j.meshcore_cli)+p('esptool',j.esptool)+(j.dry?'<span class="pill r">DRY RUN</span>':'');
  $('#homeHint').textContent='Folder on this computer: '+j.home}
