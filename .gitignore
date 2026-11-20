@@ -9,3 +9,4 @@ wheels/
 Elisha/
 *.key.txt
 *.mcs
+.elisha_ready
