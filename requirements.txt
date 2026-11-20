@@ -1,0 +1,3 @@
+meshtastic
+meshcore-cli
+esptool>=5
