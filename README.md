@@ -6,7 +6,13 @@ Named for the prophet who refused payment for what God gave freely (2 Kings 5). 
 
 A free, local radio programming tool for Meshtastic and MeshCore. It opens a simple web page on your own computer (127.0.0.1 only) and runs the official command line tools for you. No account, no cloud, no internet needed once it is set up.
 
-## Windows, easiest way
+## Download (no Python, no install)
+
+Go to the Releases page on GitHub and download `Elisha.exe`. Double click it. A small window opens and your browser opens Elisha. Leave the window open while you use it.
+
+Windows may say "Windows protected your PC" because the file is new and unsigned. Click More info, then Run anyway.
+
+## Windows, if you already have Python
 
 Double click `Start Elisha.bat`. The first time it installs the radio tools (needs internet once), then it starts Elisha and opens your browser. After that it starts right up, no internet needed.
 

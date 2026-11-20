@@ -720,7 +720,7 @@ def ver(pkg):
         from importlib.metadata import version
         return version(pkg)
     except Exception:
-        return None
+        return "bundled" if getattr(sys, "frozen", False) else None
 
 
 def list_ports():
@@ -868,6 +868,17 @@ class Handler(BaseHTTPRequestHandler):
             audit(f"ERROR {type(e).__name__}: {e}")
             return self._json({"ok": False, "error": f"Internal error: {e}"}, 500)
         self._json({"ok": False, "error": "Not found"}, 404)
+
+
+def frozen_dispatch():
+    """Inside the packaged Elisha.exe there is no separate Python, so
+    `Elisha.exe -m meshtastic ...` runs the bundled tool instead."""
+    if getattr(sys, "frozen", False) and len(sys.argv) > 2 and sys.argv[1] == "-m":
+        import runpy
+        mod = sys.argv[2]
+        sys.argv = [mod] + sys.argv[3:]
+        runpy.run_module(mod, run_name="__main__", alter_sys=True)
+        sys.exit(0)
 
 
 def main():
@@ -1120,4 +1131,5 @@ loadStatus();loadPorts();loadFiles();
 """
 
 if __name__ == "__main__":
+    frozen_dispatch()
     main()

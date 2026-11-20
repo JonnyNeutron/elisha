@@ -1,0 +1,44 @@
+name: build-windows-exe
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt pyinstaller
+      - name: Build Elisha.exe
+        shell: bash
+        run: |
+          pyinstaller --noconfirm --clean --onefile --name Elisha \
+            --collect-all meshtastic --collect-all meshcore --collect-all meshcore_cli --collect-all esptool \
+            --collect-submodules serial \
+            --hidden-import meshtastic.__main__ --hidden-import meshcore_cli.__main__ --hidden-import esptool.__main__ \
+            --copy-metadata meshtastic --copy-metadata meshcore-cli --copy-metadata esptool --copy-metadata pyserial \
+            elisha.py
+      - name: Smoke test the bundled tools
+        shell: bash
+        run: |
+          ./dist/Elisha.exe -m meshtastic --version
+          ./dist/Elisha.exe -m esptool version
+          ./dist/Elisha.exe -m meshcore_cli -v
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Elisha-windows
+          path: dist/Elisha.exe
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/Elisha.exe
+          generate_release_notes: true
